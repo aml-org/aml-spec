@@ -3,3 +3,5 @@ logo: AML.svg
 readme_index:
   enabled: false
 permalink: pretty
+plugins:
+  - jekyll-redirect-from
