@@ -1,1 +1,5 @@
 theme: jekyll-theme-minimal
+logo: AML.svg
+readme_index:
+  enabled: false
+permalink: pretty
