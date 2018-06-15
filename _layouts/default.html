@@ -18,16 +18,11 @@
           <img src="{{site.logo | relative_url}}" alt="{{ site.description | default: site.github.project_tagline }}" />
         {% endif %}
 
-        <ul>
-          {% assign sorted_pages = site.pages | sort:"order" %}
-          {% for p in sorted_pages %}
-            {% if p.title %}
-            <li>
-              <a href="{{ p.url | prepend:site.baseurl }}" {% if p.url == page.url %}class="active"{% endif %}>{{ p.title }}</a>
-            </li>
-            {% endif %}
-          {% endfor %}
-        </ul>
+      {% toc %}
+      <!-- OR
+
+      {{ content | toc_only }}
+       -->
 
       </header>
       <section>

@@ -1,5 +1,6 @@
 ---
 order: 1
+toc: true
 ---
 # AML Vocabularies 1.0
 

@@ -1,5 +1,6 @@
 ---
 order: 2
+toc: true
 ---
 # AML Dialects 1.0
 
