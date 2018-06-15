@@ -1,5 +1,6 @@
 theme: jekyll-theme-minimal
 logo: AML.svg
+baseurl: /aml-spec
 readme_index:
   enabled: false
 permalink: pretty
