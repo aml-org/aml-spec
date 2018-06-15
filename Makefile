@@ -8,7 +8,7 @@ update:
 	bundle update
 
 serve:
-	bundle exec jekyll serve --livereload --baseurl ""
+	bundle exec jekyll serve --livereload
 
 clean:
 	rm -rf ./_site/*
