@@ -24,6 +24,11 @@
             {% if p.title %}
             <li>
               <a href="{{ p.url | prepend:site.baseurl }}" {% if p.url == page.url %}class="active"{% endif %}>{{ p.title }}</a>
+
+              {% if p.url == page.url %}
+                {% include {{ page.path | replace: ".md", ""  }}_menu.html %}
+              {% endif %}
+
             </li>
             {% endif %}
           {% endfor %}

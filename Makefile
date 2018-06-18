@@ -1,6 +1,7 @@
 all: install serve
 
 install:
+	npm install -g markdown-toc
 	gem install bundler
 	bundle install
 
