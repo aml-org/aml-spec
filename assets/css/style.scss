@@ -3,6 +3,14 @@
 
 @import "{{ site.theme }}";
 
+.with-toc ul {
+  margin-top: 0;
+  padding: 0 0 0 10px;
+  a {
+    padding: 0
+  }
+}
+
 header {
   width:170px;
   margin-bottom:20px;
