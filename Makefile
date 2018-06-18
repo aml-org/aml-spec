@@ -1,14 +1,14 @@
-all: install serve
+all: install gen_menus serve
 
 install:
 	npm install -g markdown-toc
-	gem install bundler
+	gem install bundler kramdown
 	bundle install
 
 update:
 	bundle update
 
-serve: gen_menus
+serve:
 	bundle exec jekyll serve --livereload
 
 gen_menus:
