@@ -8,7 +8,10 @@ declare -a mdPagesNames=(
 
 for name in "${mdPagesNames[@]}"
 do
-    markdown-toc "${name}.md" --no-firsth1 --bullets "*" > "_includes/${name}_menu.md"
-    kramdown "_includes/${name}_menu.md" > "_includes/${name}_menu.html"
-    rm "_includes/${name}_menu.md"
+    menuMd="_includes/${name}_menu.md"
+    markdown-toc "${name}.md" --no-firsth1 --bullets "*" > ${menuMd}
+    # remove first line which contains anchor link to the page title
+    tail -n +2 "${menuMd}" > "${menuMd}.tmp" && mv "${menuMd}.tmp" "${menuMd}"
+    kramdown ${menuMd} > "_includes/${name}_menu.html"
+    rm ${menuMd}
 done
