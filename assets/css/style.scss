@@ -3,19 +3,27 @@
 
 @import "{{ site.theme }}";
 
-.with-toc ul {
-  margin-top: 0;
-  padding: 0 0 0 10px;
+a {
+  color:#3273dc;
+  text-decoration:none;
+}
+
+a:hover, 
+a:focus {
+  color:#000;
+  font-weight:normal;
 }
 
 header {
   width:170px;
   margin-bottom:20px;
+  overflow:scroll;
 }
 
 footer {
   width:170px;
-  bottom:10px;
+  bottom:0;
+  background-color:white;
 }
 
 section {
@@ -24,6 +32,7 @@ section {
 
 header ul {
   list-style:none;
+  font-size:1em;
   height:auto;
   padding:10px;
   margin:0;
@@ -32,6 +41,12 @@ header ul {
   border-radius:auto;
   border:none;
   width:auto;
+}
+
+header ul > li > ul {
+  font-size:0.9em;
+  margin-top: 0;
+  padding: 0 0 0 5px;
 }
 
 header li {
@@ -49,9 +64,15 @@ header li:last-child a {
   border-radius:0 5px 5px 0;
 }
 
-header ul a:hover, header ul a:focus, header ul a.active {
+header ul a:hover, 
+header ul a:focus {
   color:inherit;
-  font-weight:bold;
+  text-decoration:underline;
+  font-weight:normal;
+}
+
+header ul a.active {
+  color:#3273dc;
 }
 
 header ul a:active {
@@ -76,4 +97,16 @@ header ul li a {
   text-align:left;
   padding-top:6px;
   height:34px;
+}
+
+@media print, screen and (max-width: 960px) {
+
+  header ul > li > ul {
+    display:none;
+  }
+
+  section {
+    width:100%;
+  }
+
 }
