@@ -15,7 +15,7 @@ An AML Dialect processor must accept this set of constraints and the projection 
 Dialect documents are declared using the `#%Dialect 1.0` header. Documents must provide a name for the dialect and a version number, using the `dialect` and `version` properties, respectively.
 
 ``` yaml
-#%RAML 1.0 Dialect
+#%Dialect 1.0
 
 dialect: Validation Profile
 
