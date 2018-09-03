@@ -588,7 +588,7 @@ The mapping in a dialect is achieved through the `documents` property. The value
 
 ### Defining the root document mapping
 
-Root documents can encode one type of node, and declare many types of nodesusing the following properties:
+Root documents can encode one type of node, and declare many types of nodes using the following properties:
 
 | Property | Description |
 | ---      | ---         |
