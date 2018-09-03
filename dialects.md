@@ -723,7 +723,7 @@ From the main dialect document we can use the library using a library alias refe
 
 # using the library
 uses:
-  vals: validations_library.raml
+  vals: validations_library.yaml
 
 
 # the main encoded element
@@ -801,7 +801,7 @@ This fragment can be used from the main dialect document through a `!include` li
 # the main encoded element
 profile: My Profile
 validations:
-  - !include validation_fragment.raml
+  - !include validation_fragment.yaml
 ```
 
 ## Dynamic composition of documents
