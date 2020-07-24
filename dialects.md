@@ -433,65 +433,6 @@ validations:
 This syntax is used in RAML 1.0 for example to associate responses to operations using the status code of the response as the key, or payloads to responses using the media type of the payload as the key.
 The change is merely syntactical; neither the parsed graph for the dialect instance nor the SHACL semantics for the constraint will be affected by the change.
 
-
-## Key-Value nesting
-
-Sometimes you want to nest maps of key-value pairs where the the value of the key must be mapped to a property in the graph model node, and the value to a different property.
-For example, imagine you want to generate in the graph a list labels, with a `myvocab.labelName` property for the label name and a `myvocab.labelValue` property for the value of the label.
-
-You could declare the syntax in your dialect as a map of key-value pairs in the following way:
-
-
-```yaml
-nodeMappings:
-
-  LabelNode:
-    classTerm: myvocab.Label
-    mapping:
-      name:
-        propertyTerm: myvocab.labelName
-        range: string
-      value:
-        propertyTerm: myvocab.labelValue
-        range: string
-
-  TopLevelNode:
-    classTerm: myvocab.TopLevel
-    mapping:
-      labels:
-        propertyTerm: myvocab.labels
-        range: LabelNode
-        asMap: true
-        mapKey: myvocab.labelName
-        mapValue: myvocab.labelValue
-```
-
-Using this syntax a document for this dialect could declare a list of labels in the following way:
-
-
-```yaml
-labels:
-  label1: a
-  label2: b
-```
-
-The generated RDF graph will look like this:
-
-```turtle
-[
-  rdf:type myvocab:TopLevel ;
-  myvocab:labels [
-    rdf:type myvocab.Label
-    myvocab:labelName "label1" ;
-    myvocab:labelValue "a"
-  ] , [
-    rdf:type myvocab.Label
-    myvocab:labelName "label2" ;
-    myvocab:labelValue "b"
-  ]
-]
-```
-
 ## Union of nodes mapping
 
 Dialects support defining union of nodes as the valid range of a property mapping.
