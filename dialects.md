@@ -389,7 +389,7 @@ By default the nested nodes will be stored in the graph without any particular o
 
 Sometimes, when the possible values for a property in the model have a unique key that is going to be different in all the child nodes, we can use the value of that key to connect a parent node and children through a map from values of the keys to the children nodes.
 
-This style of syntax can be declared using the property `mapKey` that must have the value of the property term in the nested node mapping that will hold the value of the key.
+This style of syntax can be declared using the property `mapKey` that must have the value of the property mapping in the nested node mapping that will hold the value of the key.
 
 For example, we can rewrite the previous example using property values:
 
@@ -414,7 +414,7 @@ nodeMappings:
       validations:
         propertyTerm: validation.validations
         range: shapeValidationNode
-        mapKey: schema-org.name
+        mapKey: name
 ```
 
 With this mapping, we can now write the dialect document using the name of the validation as the key connecting profile and validation:
