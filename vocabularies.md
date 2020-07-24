@@ -44,7 +44,7 @@ The rest of the vocabulary document consist of two maps: `classTerms` declaring 
 | usage? | Description of the vocabulary |
 | base | URI prefix for the terms in the vocabulary |
 | uses? | Property introducing aliases to reuse terms defined in other AML Vocabularies |
-| external? | Property introducing aliases for external ontologies/standares |
+| external? | Property introducing aliases for external ontologies/standards |
 
 
 ## Property terms
