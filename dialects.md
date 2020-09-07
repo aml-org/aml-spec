@@ -137,8 +137,8 @@ Some other properties in the property mapping can be used to define different wa
 | Property | Description |
 |-------------|-----------------|
 | sorted  | Indicates that the values of the property must be stored preserving the declaration order |
-| mapKey | property used to declare a connection in the document instance by value of nested property |
-| mapKey | property used to declare a connection in the document instance by a tuple property key and property value |
+| mapKey | declares a key nesting with the range node (see [Nesting by key](#nesting-by-key))|
+| mapValue | declares a value nesting with the range node (see [Nesting by key value](#nesting-by-key-value))|
 
 Finally, some properties can be used to allow users to work explicitly with unions of nodes:
 
@@ -385,18 +385,22 @@ In the SHACL mapping, the generation of the `sh:maxCount 1` assertion would be o
 By default the nested nodes will be stored in the graph without any particular order. The `sorted` boolean property can be used to enforce ordering in the nested nodes. In this case the generated graph will keep the nodes in an ordered RDF collection.
 
 
-### Nesting by property value
+## Nesting
+### Nesting by key
 
-Sometimes, when the possible values for a property in the model have a unique key that is going to be different in all the child nodes, we can use the value of that key to connect a parent node and children through a map from values of the keys to the children nodes.
+When the possible values for a property in the model have a unique keys that are going to be different all child nodes 
+we can use the value of that key to connect a parent node and children nodes through a map.
 
-This style of syntax can be declared using the property `mapKey` that must have the value of the property mapping in the nested node mapping that will hold the value of the key.
+This style of syntax can be declared using the facet `mapKey`:
+* `mapKey` maps the key in the child node to the selected property mapping in the range node
 
-For example, we can rewrite the previous example using property values:
+**Example** 
+
+we can rewrite the previous example using property values:
 
 ``` yaml
 nodeMappings:
-
-  shapeValidationNode:
+  ShapeValidationNode:
     classTerm: validation.ShapeValidation
     mapping:
       name:
@@ -405,19 +409,19 @@ nodeMappings:
       message:
         propertyTerm: shacl.message
         range: string
-
-  profileNode:
+  ProfileNode:
     classTerm: validation.Profile
     mapping:
       profile:
         propertyTerm: schema-org.name
       validations:
         propertyTerm: validation.validations
-        range: shapeValidationNode
+        range: ShapeValidationNode
         mapKey: name
 ```
 
-With this mapping, we can now write the dialect document using the name of the validation as the key connecting profile and validation:
+With this mapping, we can now write the dialect document using the name of the validation as the key connecting profile 
+and validation:
 
 ``` yaml
 #%Validation Profile 1.0
@@ -430,8 +434,104 @@ validations:
     message: this is another message
 ```
 
-This syntax is used in RAML 1.0 for example to associate responses to operations using the status code of the response as the key, or payloads to responses using the media type of the payload as the key.
-The change is merely syntactical; neither the parsed graph for the dialect instance nor the SHACL semantics for the constraint will be affected by the change.
+The rules for defining key nesting are the following:
+
+* Only properties with literal ranges can be defined as `mapKey`
+
+Failing to meet this requirement will result in a violation
+
+Bear in mind the following considerations:
+
+* This change is merely syntactical; neither the parsed graph for the dialect instance nor the SHACL semantics for the 
+constraint will be affected by the change.
+
+* The range of the property defining the nesting will allow multiple objects in its value (defaults to 
+`allowMultiple: true`)
+
+### Nesting by key value
+
+Similarly to key nesting, sometimes you want to nest maps of key-value pairs (instead of keys only) in the child node to 
+the value of property mappings in the range node.
+
+This style of syntax can be declared combining the facets `mapKey` and `mapValue`:
+
+* `mapKey` maps the key in the child node to the selected property mapping in the range node
+* `mapValue` maps the value after the key in the child node to the selected property mapping in the range node
+
+**Example**
+
+Imagine you want to generate in the graph a list labels, with a `name` property for the label name and a `value` 
+property for the value of the label.
+
+You could declare the syntax in your dialect as a map of key-value pairs in the following way:
+
+```yaml
+nodeMappings:
+  LabelNode:
+    classTerm: myvocab.Label
+    mapping:
+      name:
+        propertyTerm: myvocab.labelName
+        range: string
+      value:
+        propertyTerm: myvocab.labelValue
+        range: string
+  TopLevelNode:
+    classTerm: myvocab.TopLevel
+    mapping:
+      labels:
+        propertyTerm: myvocab.labels
+        range: LabelNode
+        mapKey: name
+        mapValue: value
+```
+
+Using this syntax a document for this dialect could declare a list of labels in the following way:
+
+
+```yaml
+labels:
+  label1: a
+  label2: b
+```
+
+The generated RDF graph will look like this:
+
+```turtle
+[
+  rdf:type myvocab:TopLevel ;
+  myvocab:labels [
+    rdf:type myvocab.Label
+    myvocab:labelName "label1" ;
+    myvocab:labelValue "a"
+  ] , [
+    rdf:type myvocab.Label
+    myvocab:labelName "label2" ;
+    myvocab:labelValue "b"
+  ]
+]
+```
+
+The rules for defining key-value nesting are the following:
+
+* Nodes with at least two properties can be used as ranges for properties defining key-value nesting. 
+
+* Mandatory properties in the range node must be defined as either `mapKey` or `mapValue`. Additional non-mandatory 
+properties will not be parsed.
+
+* `mapValue` can only be defined is `mapKey` is defined
+
+* Only properties with literal ranges can be defined as `mapKey`
+
+Failing to meet these requirements will result in violations
+
+Bear in mind the following considerations:
+
+* This change is merely syntactical; neither the parsed graph for the dialect instance nor the SHACL semantics for the 
+constraint will be affected by the change.
+
+* The range of the property defining the nesting will allow multiple objects in its value (defaults to 
+`allowMultiple: true`)
 
 ## Unions
 Unions are a mechanism for declaring a set of `nodeMappings` (literals not supported) that can be used in different 
