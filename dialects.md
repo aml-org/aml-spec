@@ -433,17 +433,23 @@ validations:
 This syntax is used in RAML 1.0 for example to associate responses to operations using the status code of the response as the key, or payloads to responses using the media type of the payload as the key.
 The change is merely syntactical; neither the parsed graph for the dialect instance nor the SHACL semantics for the constraint will be affected by the change.
 
-## Union of nodes mapping
+## Unions
+Unions are a mechanism for declaring a set of `nodeMappings` (literals not supported) that can be used in different 
+parts of a dialect. Each of the node mappings in a union is called a **member** of that union.
 
-Dialects support defining union of nodes as the valid range of a property mapping.
+Dialects support declaring two kinds of unions. These are:
+* *Union range*: union set as the range of a property mapping
+* *Union node*: union set as an independent node mapping
 
-In order achieve this, an array of `nodeMappings` can be declared as the value for the of the `range` property.
+### Union range
+To declare a _union range_ a non-empty array of `nodeMappings` members must be specified as the value for the of the 
+`range` facet of a property mapping
 
 For example:
 
 ```yaml
 #%Dialect 1.0
-dialect: Test Unions
+dialect: Union Range
 version: 1.0
 nodeMappings:
   A:
@@ -455,17 +461,267 @@ nodeMappings:
       allowMultiple: true
       unionProperty:
         propertyTerm: vocab.unionProp
-          range: [ A, B ]
+        range: [ A, B ]
 ```
 
-The AML processor must be able to disambiguate the type of node when parsing the document instance. This means that the set of mandatory properties for each type of node in the union must be disjoint. It this requirement is not met, an exception will be raised when parsing the dialect document.
+### Union node
+To declare a _union node_ a non-empty array of `nodeMappings` members must be specified as the value for the of the 
+`union` facet of a node mapping
 
-A solution for situations where ambiguous node mappings must be specified in a union property range is to provide an explicit discriminator properties that will be used by the processor to parse the node in the AST tree of the document instance.
+For example:
+```yaml
+#%Dialect 1.0
+dialect: Union Node
+version: 1.0
+nodeMappings:
+  A:
+    …
+  B:
+    …
+  RootNode:
+    union:
+      - A
+      - B
+```
 
-The name of the discriminator property and the mapping from discriminator property value to node mappings must be declared in the dialect document using the `typeDiscriminatorName` and `typeDiscriminator` properties respectively.
+Union nodes cannot define additional property mappings
 
-Consider the following a revised version of the previous example:
+### Selecting the appropriate member from a union when parsing a document instance
+The AML processor must be able to disambiguate the appropriate union member to parse when parsing a document instance. 
+To achieve that disambiguation the AML processor requires *hints* to make the selection. Those hints can be obtained via 
+two mechanisms:
+* Implicitly using *Schema inference*
+* Explicitly using *Type discriminators* 
 
+#### Schema inference
+In schema inference the AML processor automatically selects the appropriate union member based on hints provided by the 
+schema represented by a node mapping.
+
+It selects the union member for which the node in the document instance can be bound to its set of property mappings. 
+This means the node in the document instance defined values for at least the mandatory properties of the union member, 
+regardless if those values are valid or not.
+
+If the ability to bind property mappings is satisfied for more than one union member this will be considered *ambiguous* 
+and invalid.
+
+To avoid ambiguity it is required that in the dialect definition:
+* The set of property mapping **names** in each union member is not equal to any other union member's same set.
+
+Failing to meet this condition will result in a violation because it introduces un-avoidable ambiguity (see example 4)
+   
+To avoid ambiguity it is recommended that in the dialect definition: 
+* All members of a union define at least one mandatory property
+* The set of mandatory property mappings **names** in each union member is not equal to any other union member's same 
+set.
+
+Failing to meet these conditions will result in warnings because it can introduce eventual ambiguity (see example 3)
+
+*Note: only property mapping names are checked because ranges can be other sources of ambiguity*
+
+Example 1: no ambiguity
+```yaml
+#%Dialect 1.0
+dialect: Union Node
+version: 1.0
+nodeMappings:
+  A:
+    mapping:
+      propertyA:
+        range: string
+        required: true
+      propertyX:
+        range: string
+        required: true
+  B:
+    mapping:
+      propertyB:
+        range: string
+        required: true
+      propertyX:
+        range: string
+        required: true
+
+  RootNode:
+    union:
+      - A
+      - B
+```
+
+This node will be parsed as node A because only node A's property mappings can be bounded 
+```yaml
+propertyA: some value for property A
+propertyX: some value for property X
+```
+
+Example 2: no ambiguity
+```yaml
+#%Dialect 1.0
+dialect: Union Node
+version: 1.0
+nodeMappings:
+  A:
+    mapping:
+      propertyA:
+        range: string
+        required: true
+      propertyX:
+        range: string
+        required: true
+  B:
+    mapping:
+      propertyB:
+        range: string
+        required: false
+      propertyX:
+        range: string
+        required: true
+
+  RootNode:
+    union:
+      - A
+      - B
+```
+
+This node will be parsed as node A because only node A's property mappings can be bounded 
+```yaml
+propertyA: some value for property A
+propertyX: some value for property X
+```
+
+This node will be parsed as node B because only node B's property mappings can be bounded
+```yaml
+propertyB: some value for property B
+propertyX: some value for property X
+```
+
+This node will be parsed as node B because only node B's property mappings can be bounded (`propertyB` is optional while
+ `propertyA` is mandatory)  
+```yaml
+propertyX: some value for property X
+```
+
+Example 3: eventual ambiguity
+```yaml
+#%Dialect 1.0
+dialect: Union Node
+version: 1.0
+nodeMappings:
+  A:
+    mapping:
+      propertyA:
+        range: string
+        required: false
+      propertyX:
+        range: string
+        required: true
+  B:
+    mapping:
+      propertyB:
+        range: string
+        required: false
+      propertyX:
+        range: string
+        required: true
+
+  RootNode:
+    union:
+      - A
+      - B
+```
+
+This node will be parsed as node A because only node A's property mappings can be bounded 
+```yaml
+propertyA: some value for property A
+propertyX: some value for property X
+```
+
+This node will be parsed as node B because only node B's property mappings can be bounded
+```yaml
+propertyB: some value for property B
+propertyX: some value for property X
+```
+
+This node is ambiguous because both set of property mappings (from nodes A & B) can be bounded. Recall that both 
+`propertyA` & `propertyB` are non mandatory so this node could be parsed as either node A or node B. 
+```yaml
+propertyX: some value for property X
+```
+
+Example 4: un-avoidable ambiguity
+```yaml
+#%Dialect 1.0
+dialect: Union Node
+version: 1.0
+nodeMappings:
+  A:
+    mapping:
+      propertyX:
+        range: integer
+        required: true
+  B:
+    mapping:
+      propertyX:
+        range: string
+        required: true
+
+  RootNode:
+    union:
+      - A
+      - B
+```
+
+In this example ambiguity cannot be avoided by dialect definition. Recall that only property mapping names are checked for ambiguity.  
+
+
+#### Type discriminators
+Type discriminators are explicit hints defined by the dialect that tell the AML processor which union member to select
+
+The dialect must define a special property as the `typeDiscriminatorName` and a series of *distinct* values that can 
+be bound to such property. Each of those values must be listed under the `typeDiscriminator` facet and must define a 
+1-to-1 correspondence with each of the union members.
+
+Discriminator properties do not have semantics, their only purpose is to disambiguate between union members.
+
+Discriminators can be defined for both **Union nodes** and **Union ranges**
+
+Example using **Union nodes**:
+```yaml
+#%Dialect 1.0
+dialect: Test Unions
+version: 1.0
+
+nodeMappings:
+  A:
+    ...
+    mapping:
+      text:
+        propertyTerm: vocab.text
+        range: string
+  B:
+    …
+    mapping:
+      text:
+        propertyTerm: vocab.text
+        range: string
+
+  RootNode:
+    union:
+      - A
+      - B  
+    typeDiscriminatorName: kind
+    typeDiscriminator:
+      TypeA: A
+      TypeB: B
+```
+
+This example will be parsed as node A because the value of the `kind` property marked as discriminator is `TypeA` which
+corresponds with the A node as marked in the `typeDiscriminator` facet.
+```yaml
+text: Hello world
+kind: TypeA
+```
+
+Example using **Union ranges**:
 ```yaml
 #%Dialect 1.0
 dialect: Test Unions
@@ -496,20 +752,67 @@ nodeMappings:
             TypeA: A
             TypeB: B
 ```
-
-Even if this case the nodeMappings `A` and `B` are ambiguous they can be used in a union thanks to the declared discriminator property `kind`:
-
+In this case the first element of the `unionProperty` will be parsed as node A and the second as node B for the same 
+reason as in the previous example.
 ```yaml
-#%Test Unions 1.0
-
 unionProperty:
-  -
+  - text: This will be parsed as node A
     kind: TypeA
-     text: this will be parsed using nodeMapping ‘A’
-  -
-    kind: TypeB
-    text: this will be  parsed using nodeMapping ‘B’
+  - text: This will be parsed as node B
+    kind: TypeB 
 ```
+
+The rules for defining discriminators are following:
+* Both `typeDiscriminator` and `typeDiscriminatorName` facets must be defined in conjunction with non-null values
+* Both `typeDiscriminator` and `typeDiscriminatorName` can only be defined for **union nodes** or **union ranges**
+* The values listed in the `typeDiscriminator` facet must be distinct and have a 1-to-1 correspondence with each union 
+member
+* The `typeDiscriminatorName` facet cannot define a type discriminator property which overrides any property mapping 
+from any of the union members
+* The `typeDiscriminatorName` facet cannot define a type discriminator property which overrides any type discriminator 
+property from any of the union members
+
+
+If a document instance defines as the value of the type discriminator property a value which is not included in the list
+defined by the `typeDiscriminator` facet, that instance is invalid.
+
+Invalid example:
+```yaml
+#%Dialect 1.0
+dialect: Test Unions
+version: 1.0
+
+nodeMappings:
+  A:
+    ...
+    mapping:
+      text:
+        propertyTerm: vocab.text
+        range: string
+  B:
+    …
+    mapping:
+      text:
+        propertyTerm: vocab.text
+        range: string
+
+  RootNode:
+    union:
+      - A
+      - B  
+    typeDiscriminatorName: kind
+    typeDiscriminator:
+      TypeA: A
+      TypeB: B
+```
+
+This example is invalid because `TypeC` is not listed in the `typeDiscriminator` facet. 
+```yaml
+text: Hello world
+kind: TypeC
+```
+
+*Note: the use of discriminators is recommended because they erase the posbility of ambiguity*
 
 ## Document model mapping
 
