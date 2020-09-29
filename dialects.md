@@ -386,6 +386,7 @@ By default the nested nodes will be stored in the graph without any particular o
 
 
 ## Nesting
+
 ### Nesting by key
 
 When the possible values for a property in the model have a unique keys that are going to be different all child nodes 
@@ -534,6 +535,7 @@ constraint will be affected by the change.
 `allowMultiple: true`)
 
 ## Unions
+
 Unions are a mechanism for declaring a set of `nodeMappings` (literals not supported) that can be used in different 
 parts of a dialect. Each of the node mappings in a union is called a **member** of that union.
 
