@@ -1,6 +1,7 @@
 ---
 order: 1
 ---
+
 # AML Vocabularies 1.0
 
 AML Vocabularies is a mechanism to describe any domain of discourse using familiar YAML syntax and modular documents.
