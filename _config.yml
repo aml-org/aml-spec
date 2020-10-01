@@ -1,4 +1,6 @@
 theme: jekyll-theme-minimal
+title: AML Spec
+description: AML Spec documentation
 logo: AML.svg
 baseurl: /aml-spec
 readme_index:
