@@ -1328,6 +1328,179 @@ following two definitions might be unwanted:
 
     *This will NOT result in any warnings/violations in the dialect definition.* 
 
+## Document nodes linking
+In AML it is possible to link nodes directly in the parsed graph. This is done by enabling linking in the dialect 
+definition. Example of linked nodes can be:
+* Nodes from the same document
+* Nodes from other documents parsed with the same dialect
+* Nodes form other documents parsed with a different dialect
+
+AML linking is enabled in the dialect definition using the `isLink: [boolean]` facet for a *property mapping*. 
+
+### Definitions
+#### Link target
+*Target node*: is the node which will be the target of the link property
+
+*Target document*: is the document which defines the target node
+
+*Target node mapping*: is the node mapping responsible for parsing the target node. It is the range of the link property
+mapping. It can be defined either within the same dialect, in a dialect library or in a fragment.
+
+*Target dialect/library*: is the dialect/library which defines the target node mapping. If the target node mapping 
+is defined in a fragment, then it is the dialect/library that includes that fragment.
+
+#### Link source
+*Source node*: is the node which is parsed with the link property mapping
+
+*Source document*: is the document which defines the source node
+
+*Source node mapping*: is the node which defined the link property mapping
+
+*Source dialect/library*: is the dialect/library which defines the source node mapping. If the source node mapping 
+is defined in a fragment, then it is the dialect/library that includes that fragment.
+
+### Example usage
+
+#### Source node mapping:
+```yaml
+MyNode:
+  mapping:
+    myLinkProperty:
+      range: Person
+      isLink: true
+```
+
+#### Source document:
+```yaml
+myLinkProperty: http://test.com/JohnDoe
+```
+
+#### Parsed source document:
+```json
+{
+  "@id": "...",
+  "@type": ["#/declarations/MyNode", "meta:DialectDomainElement", "document:DomainElement"],
+  "data:myLinkProperty": {
+    "@id": "http://test.com/JohnDoe",
+    "@type": ["#/declarations/Person", "meta:DialectDomainElement", "document:DomainElement"]
+  }
+}
+```
+
+In this example we define that the property `myLinkProperty` which points to a node of type `Person` **is a link**.
+This means that, in the document, the value of the `myLinkProperty` will be used to **construct the ID of the target 
+node**. This can be seen in the ID of the node value of the `data:myLinkProperty` property in the parsed source document. 
+
+Another important aspect to notice is that links are typed. The node value of the `data:myLinkProperty` property in the 
+parsed source document has a `@type` property which includes the original `Person` type we have defined in the source
+dialect.
+
+Target node IDs can be constructed in two ways: *URI links* and *ID template links*.
+
+### URI links
+URI links are the most straight forward. These are defined as:
+
+> **URI link**: link property value which represents the URI of the target node
+
+In URI links the ID of the target node is provided "as-is" in the document. This ID can be represented in multiple ways:
+* A string representation with the URI of the target node
+* A map representation containing the `$id` entry
+
+####  Example usage
+
+##### Source node mapping:
+```yaml
+MyNode:
+  mapping:
+    myLinkProperty:
+      range: Person
+      allowMultiple: true
+      isLink: true
+```
+
+##### Source document:
+```yaml
+myLinkProperty: 
+  - http://test.com/JohnDoe           # URI link string
+  - $id: http://test.com/JohnDoe      # URI link map
+```
+
+In this example all of the nodes in the array point to the same node using *different representations* of URI links.
+URI links can point to any node regardless of where it was defined, as long a URI is provided for it.   
+
+### ID template links
+ID template links re-use idTemplate definitions from the *target node mapping* to construct links target URIs. ID 
+template links are defined as follows:
+
+> ID template links: link property map value that represents the values for the variables defined in the id template of the 
+> target node mapping
+
+In practice these are maps of property-scalar values. The target node ID will be formed in the same way as a non-link 
+node ID with idTemplate. For more information see the idTemplate documentation.
+
+####  Example
+
+##### Target node mapping:
+```yaml
+TargetNodeMapping:
+  idTemplate: http://test.com/{a}/{b}
+  mapping:
+    a:
+      range: string
+    b: 
+      renge: string
+```
+
+##### Target document:
+```yaml
+# Target node -> http://test.com/people/JohnDoe
+a: people
+b: JohnDoe
+```
+
+##### Source node mapping:
+```yaml
+MyNode:
+  mapping:
+    myLinkProperty:
+      range: TargetNodeMapping
+      isLink: true
+```
+
+##### Source document:
+```yaml
+myLinkProperty: # Link to http://test.com/people/JohnDoe
+  a: people
+  b: JohnDoe
+```
+
+As you can see in the above example, both the target node and the link node use the same ID template definition to 
+construct the node ID & target ID respectively. 
+
+### Validation
+Links are validated as follows:
+* Scalars cannot be linked, setting a scalar as the range of a link property mapping will result in a **violation** in the 
+**source dialect definition** (because scalars are not nodes with IDs)
+* `$id` directive from URI Links cannot be mixed with variable definitions from the idTemplate from ID Template Links. 
+Mixing both mechanisms will result in a **violation** in the **source document definition**.
+
+Both URI Links and ID Template Links support the use of the `$base` directive. When using the `$base` directive all the 
+validations described in the `$base` definition apply to links as well. For more information see the `$base` 
+documentation in the spec.
+
+#### Validation for URI Links
+URI links also include the following extra validations:
+* Defining `$base` without `$id` will result in a **violation** in the **source document definition**
+
+#### Validation for ID Template links
+When using the ID Template links all the validations described in the idTemplate definition apply to ID Template Links 
+as well. 
+
+ID Template Links also include the following extra validations:
+* Defining properties in the document which do not relate to variables in the idTemplate will result in **violations** 
+in the **source document definition**. The only exception are *discriminator properties* when the target node mapping is a 
+union node (for more info see the discriminator definition).
+
 ## Reference styles
 
 AML processors must support three different styles of references across the modular document instances for a dialect:
