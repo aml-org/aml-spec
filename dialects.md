@@ -1328,25 +1328,25 @@ following two definitions might be unwanted:
 
     *This will NOT result in any warnings/violations in the dialect definition.* 
 
-## Linking styles
+## Reference styles
 
-AML processors must support three different styles of links across the modular document instances for a dialect:
+AML processors must support three different styles of references across the modular document instances for a dialect:
 
-### Include links
+### Include references
 
-Include links marked by the linking directive introduced by the strings `!include` or `$include` can be used to link to the encoded node of a fragment
+Include references marked by the referencing directive introduced by the strings `!include` or `$include` can be used to reference to the encoded node of a fragment
 
 ### Library aliases
 
 Nodes collected in a reusable library document can be referenced in a target document using a library alias using the `use` keyword to introduce the library alias and then a `{alias}.{declaration}` notation for the actual node reference
 
-### Hash reference links
+### Hash references
 
-Hash reference links, introduced by the `$ref` linking directive whose value must be the ID/URI of the referenced element, for example within a library.
+Hash references, introduced by the `$ref` referencing directive whose value must be the ID/URI of the referenced element, for example within a library.
 
-### Dialect links
+### Dialect references
 
-Dialect links, introduced by the `$dialect` linking directive can be used to provide information about the dialect for a full document, for example, when using JSON syntax for a dialect instance document or for the node mapping in a dynamic node.
+Dialect references, introduced by the `$dialect` referencing directive can be used to provide information about the dialect for a full document, for example, when using JSON syntax for a dialect instance document or for the node mapping in a dynamic node.
 
 ## References
 
