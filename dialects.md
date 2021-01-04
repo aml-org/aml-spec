@@ -160,7 +160,7 @@ nodeMappings:
     mapping:
       profile:
         propertyTerm: schema-org.name
-        required: true
+        mandatory: true
         pattern: [a-z]+[A-Za-z]*
 ```
 
@@ -631,18 +631,18 @@ nodeMappings:
     mapping:
       propertyA:
         range: string
-        required: true
+        mandatory: true
       propertyX:
         range: string
-        required: true
+        mandatory: true
   B:
     mapping:
       propertyB:
         range: string
-        required: true
+        mandatory: true
       propertyX:
         range: string
-        required: true
+        mandatory: true
 
   RootNode:
     union:
@@ -666,18 +666,18 @@ nodeMappings:
     mapping:
       propertyA:
         range: string
-        required: true
+        mandatory: true
       propertyX:
         range: string
-        required: true
+        mandatory: true
   B:
     mapping:
       propertyB:
         range: string
-        required: false
+        mandatory: false
       propertyX:
         range: string
-        required: true
+        mandatory: true
 
   RootNode:
     union:
@@ -713,18 +713,18 @@ nodeMappings:
     mapping:
       propertyA:
         range: string
-        required: false
+        mandatory: false
       propertyX:
         range: string
-        required: true
+        mandatory: true
   B:
     mapping:
       propertyB:
         range: string
-        required: false
+        mandatory: false
       propertyX:
         range: string
-        required: true
+        mandatory: true
 
   RootNode:
     union:
@@ -760,12 +760,12 @@ nodeMappings:
     mapping:
       propertyX:
         range: integer
-        required: true
+        mandatory: true
   B:
     mapping:
       propertyX:
         range: string
-        required: true
+        mandatory: true
 
   RootNode:
     union:
