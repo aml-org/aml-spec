@@ -1328,6 +1328,113 @@ following two definitions might be unwanted:
 
     *This will NOT result in any warnings/violations in the dialect definition.* 
 
+## ID templates
+
+### Summary
+ID template is a mechanism to set the ID of a parsed node (from a dialect instance) using the value of different
+properties of the node (in that dialect instance).
+
+### Declaring an ID template
+ID templates are specified in the *dialect definition*. These are set using the `idTemplate` facet for the node mapping
+responsible for parsing the desired node. The value of an `idTemplate` facet must be a string which can include zero or
+more ID template variables written between curly braces (e.g. `{myTemplateVariable}`). ID template variables must match
+one of the property mappings in that same node declared in that same node.
+
+Union nodes cannot set ID templates because these don't declare property mappings. ID templates must be set for each
+union member.
+
+### Setting the parsed node ID with an ID template
+When parsing a dialect instance, the ID template variables get replaced by the actual **URL-encoded** values (a.k.a.
+percent-encoded) of the matching property mappings. The resulting string must be a valid URI which will be assigned
+as that node's ID.
+
+**Note**: The corresponding properties will contain the original non URL-encoded value.
+
+### Valid examples
+#### Example 1: simple case
+##### Dialect
+```yaml
+PersonNode:
+  idTemplate: http://people.org/country/{countryName}/people/{personId}
+  mapping:
+    countryName:
+      range: string
+      mandatory: true
+      unique: true
+    personId:
+      range: string
+      mandatory: true
+      unique: true
+    firstName:
+      range: string
+    lastName:
+      range: string
+```
+
+##### Dialect Instance
+
+```yaml
+countryName: Argentina
+personId: 1562340
+firstName: Lionel
+lastName: Messi
+```
+
+##### Parsed node
+
+```json
+{
+  "@id": "http://people.org/country/Argentina/people/1562340",
+  "countryName": "Argentina",
+  "personId": "1562340",
+  "firstName": "Lionel",
+  "lastName": "Messi"
+}
+```
+Notice that the ID of the parsed node gets set using the provided template, replacing the template variables
+`{countryName}` and `{personId}` with the values of the parsed property mappings `countryName` and `personId`, which in
+this case are `Argentina` and `1562340`
+
+#### Example 2: URL-encoded string
+##### Dialect
+```yaml
+PersonNode:
+  idTemplate: http://people.org/people/{fullName}
+  mapping:
+    fullName:
+      range: string
+      mandatory: true
+      unique: true
+```
+
+##### Dialect Instance
+
+```yaml
+fullName: Lionel Messi
+```
+
+##### Parsed node
+
+```json
+{
+  "@id": "http://people.org/people/Lionel%20Messi",
+  "fullName": "Lionel Messi"
+}
+```
+Notice that the space character ' ' in the dialect instance gets encoded as `%20` in the node ID but keeps its original
+value in the parsed property.
+
+### Validation of an ID template definition
+When not met the following conditions will raise a **violation** in the dialect definition:
+
+* An ID template variable does not match any property mapping
+* An ID template variable matches a non-mandatory property mapping
+* An ID template variable matches a non-unique property mapping
+* An ID template variable matches a property mapping with a non-scalar range
+* An ID template variable matches a property mapping that allows multiple values (`allowMultiple: true`)
+* Defining an ID template on a union node
+* Defining an ID template which will never produce a valid URI
+
 ## Document nodes linking
 In AML it is possible to link nodes directly in the parsed graph. This is done by enabling linking in the dialect 
 definition. Example of linked nodes can be:
