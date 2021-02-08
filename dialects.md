@@ -1608,6 +1608,203 @@ ID Template Links also include the following extra validations:
 in the **source document definition**. The only exception are *discriminator properties* when the target node mapping is a 
 union node (for more info see the discriminator definition).
 
+## Node mapping extension
+
+In AML it is possible to extend node mappings definitions with the `extends` facet.
+
+The value of the `extends` facet should be the name of another node mapping, which called the _Parent node mapping_. The
+node defining the `extends` facet will be called consequently the _Child node mapping_.
+
+<!-- TODO multiple extension: programmatic API allows to define multiple extension, however only the first parent is used for resolution, other parents are ignored -->
+
+Extending a node mapping reuses the definitions from the parent node mapping that **are not defined** in the child node
+mapping. These include:
+
+* Property mappings
+* ID Templates
+
+Property mappings in the child node mapping that share the same _name_ as some property mapping the parent node mapping
+_override_ that parent property mapping. In the same way ID Templates defined in the child node mapping override ID
+Templates defined in the parent node mapping.
+
+<!-- TODO is extension allowed for unions? If so how should union members, discriminators & discriminator values be resolved -->
+
+### Extension is neither subtyping nor polymorphism
+
+In AML node mapping extension is purely structural. This means that when parsing a dialect instance node the node
+mapping responsible for parsing that node is a combination of the mapping structure defined in the parent and child node
+mappings.
+
+Semantics are not affected by extension. Class terms from parent node mapping are not reflected in child node mapping.
+The hierarchical relationship between semantic terms should be represented in an AML Vocabulary, not in a dialect.
+
+The best approximation for polymorphism are _union nodes_. These allow to group several node mappings into one single
+node mapping. The relationship between a union node and each of its members in neither hierarchical nor semantic, it is
+only structural, just like in node mapping extension. See [Unions](#unions) for more details.
+
+### Examples
+
+#### Example 1: basic extension
+
+##### Dialect
+
+```yaml
+ParentNodeMapping:
+  classTerm: myExternal.ParentClass
+  mapping:
+    parentName:
+      propertyTerm: myExternal.parentProperty
+      range: string
+
+ChildNodeMapping:
+  classTerm: myExternal.ChildClass
+  extends: ParentNodeMapping
+  mapping:
+    childName:
+      propertyTerm: myExternal.childProperty
+      range: string
+```
+
+##### Dialect instance (ChildNodeMapping)
+
+```yaml
+parentName: Anakin Skywalker
+childName: Luke Skywalker
+```
+
+##### Parsed node
+
+```json
+{
+  "@id": "...instance.yaml#/encodes",
+  "@type": [
+    "http://myexternal.org#ChildClass",
+    ...
+  ],
+  "http://myexternal.org#parentProperty": "Anakin Skywalker",
+  "http://myexternal.org#childProperty": "Luke Skywalker"
+}
+```
+
+As seen in the above example, the parsed node contains both properties:
+
+* `http://myexternal.org#parentProperty` derived from the parent property mapping `parentName`
+* `http://myexternal.org#childProperty` derived from the child property mapping `childName`
+
+Notice that only the `http://myexternal.org#ChildClass` class term was included in the `@types` facet of the node. This
+is due to the structural non-semantic relationship of node mapping extension.
+
+#### Example 2: property mapping override
+
+##### Dialect
+
+```yaml
+ParentNodeMapping:
+  classTerm: myExternal.ParentClass
+  mapping:
+    myProperty:
+      propertyTerm: myExternal.parentProperty
+      range: string
+ChildNodeMapping:
+  classTerm: myExternal.ChildClass
+  extends: ParentNodeMapping
+  mapping:
+    myProperty:
+      propertyTerm: myExternal.childProperty
+      range: string
+```
+
+##### Dialect instance (ChildNodeMapping)
+
+```yaml
+myProperty: I'm overriden by the child property mapping
+```
+
+##### Parsed node
+
+```json
+{
+  "@id": "...instance.yaml#/encodes",
+  "@type": [
+    "http://myexternal.org#ChildClass",
+    ...
+  ],
+  "http://myexternal.org#childProperty": "I'm overriden by the child property mapping"
+}
+```
+
+The above example showcases a child property mapping that overrides a parent property mapping.
+
+Both the child and parent node define the `myProperty` property mapping, each mapping to
+`http://myexternal.org#childProperty` and `http://myexternal.org#parentProperty` respectfully. As seen in the parsed
+node the `http://myexternal.org#childProperty` overrides the `http://myexternal.org#parentProperty` because both
+share the same `myProperty` property mapping name.
+
+#### Example 3: ID Template extension
+
+##### Dialect
+
+```yaml
+ParentNodeMapping:
+  classTerm: myExternal.ParentClass
+  idTemplate: http://myNode.org#{nodeId}
+  mapping:
+    nodeId:
+      propertyTerm: myExternal.parentProperty
+      range: string
+      mandatory: true
+ChildNodeMapping:
+  classTerm: myExternal.ChildClass
+  extends: ParentNodeMapping
+  mapping:
+    nodeId:
+      propertyTerm: myExternal.childProperty
+      range: string
+      mandatory: true
+```
+
+##### Dialect instance (ChildNodeMapping)
+
+```yaml
+nodeId: my-example-node
+```
+
+##### Parsed node
+
+```json
+    {
+  "@id": "http://myNode.org#my-example-node",
+  "@type": [
+    "http://myexternal.org#ChildClass",
+    ...
+  ],
+  "http://myexternal.org#childProperty": "my-example-node"
+}
+```
+In the above example the parent node defines an ID Template which is reused by the child node. This can be seen in the
+parsed node as its ID `http://myNode.org#my-example-node` matches the template definition from the parent while the
+`nodeId` property mapping matches the child property `http://myexternal.org#childProperty`.
+
+Notice that ID Template variables must match property mappings in the parent node mapping definition which can be
+then optionally overriden by child property mappings. See [ID Templates](#id-templates).
+
+### Validation
+Node mapping extension definition validations:
+1. Defining node mapping extensions in which either the parent or child node mapping is a _union node_ will raise a
+   **violation** in the _dialect definition_. Union nodes cannot define property mappings nor ID Templates so it does not
+   make sense to define extensions between these and will be considered an error.
+2. ID Template definitions from parent node mappings are validated in child mappings as if were defined by the child
+   node mapping. All the mentioned validations in [ID Templates](#id-templates) apply for child node mappings as well.
+3. Property mappings from parent node mappings cannot share _property terms_ with any of the property mappings from the
+   child node. Doing so will result in a **violation** in the _dialect definition_.
+
+Node mapping extension dialect instance validations:
+1. Non-overriden property mappings from parent node mappings will produce the same validations in child node mappings as if were
+   defined by the child node mapping in _dialect instance validation_. Example: defining a mandatory property mapping in the
+   parent node means that nodes parsed with either the parent or child node mappings must satisfy this mandatory property
+   mapping (unless overriden by the child node).
+
+
 ## Reference styles
 
 AML processors must support three different styles of references across the modular document instances for a dialect:
