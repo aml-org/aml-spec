@@ -209,7 +209,6 @@ An additional custom type is also available:
 
 Using literal ranges in property mappings will introduce the corresponding SHACL constraint that will be used by the AML processor to validate the parsed document instance graph.
 
-
 ## Data node mappings
 
 Data node mappings can be connected to describe the full shape of the expected data model graph. This set of connected nodes also describe at the same time the full structure of the dialect document instance, understanding the property mappings defined in the dialect as a mapping function of the tree of AST nodes in the document instance over the generated output graph.
@@ -385,82 +384,315 @@ validations:
 In the SHACL mapping, the generation of the `sh:maxCount 1` assertion would be omitted.
 By default the nested nodes will be stored in the graph without any particular order. The `sorted` boolean property can be used to enforce ordering in the nested nodes. In this case the generated graph will keep the nodes in an ordered RDF collection.
 
-
 ## Nesting
+### Introduction
+In AML it is possible to represent a sequence of nodes as a map. This can be achieved by introducing an extra layer of nesting
+between parent and child nodes. Take a look at the following examples:
 
-### Nesting by key
+**Dialect (without nesting)**
+```yaml
+ParentNodeMapping:
+  mapping:
+    name:
+      range: string
+    children:
+      range: ChildNodeMapping
+      allowMultiple: true
 
-When the possible values for a property in the model have a unique keys that are going to be different all child nodes 
-we can use the value of that key to connect a parent node and children nodes through a map.
-
-This style of syntax can be declared using the facet `mapKey`:
-* `mapKey` maps the key in the child node to the selected property mapping in the range node
-
-**Example** 
-
-we can rewrite the previous example using property values:
-
-``` yaml
-nodeMappings:
-  ShapeValidationNode:
-    classTerm: validation.ShapeValidation
-    mapping:
-      name:
-        propertyTerm: schema-org.name
-        range: string
-      message:
-        propertyTerm: shacl.message
-        range: string
-  ProfileNode:
-    classTerm: validation.Profile
-    mapping:
-      profile:
-        propertyTerm: schema-org.name
-      validations:
-        propertyTerm: validation.validations
-        range: ShapeValidationNode
-        mapKey: name
+ChildrenNodeMapping:
+  mapping:
+    name:
+      range: string
+    favoriteColor:
+      range: string
 ```
 
-With this mapping, we can now write the dialect document using the name of the validation as the key connecting profile 
-and validation:
-
-``` yaml
-#%Validation Profile 1.0
-
-profile: My Profile
-validations:
-  my validation:
-    message: this is a validation
-  other validation:
-    message: this is another message
+**Without nesting**
+```yaml
+name: parent
+children:
+  - name: child1
+    favoriteColor: red
+  - name: child2
+    favoriteColor: blue
 ```
 
-The rules for defining key nesting are the following:
+**With nesting key**
+```yaml
+name: parent
+children:
+  child1:
+    favoriteColor: red
+  child2:
+    favoriteColor: blue
+```
 
-* Only properties with literal ranges can be defined as `mapKey`
+As it can be observed in the above example the `children` property used to have a sequence as its range which could be 
+re-written as a map. This was done by introducing **new keys** associated with the `name` property of the child node. 
+The `name` property will be known as the _key-mapped property mapping_ (formal definition coming shortly) since its value
+is mapped from the keys of the extra nesting layer. 
 
-Failing to meet this requirement will result in a violation
+For some cases it is possible to go a step further and not only define a _key-mapped property mapping_ but also to 
+define a _value-mapped property mapping_. Take a look at the following example:
 
-Bear in mind the following considerations:
+**Dialect (without nesting)**
+```yaml
+PaletteNodeMapping:
+  mapping:
+    name: 
+      range: string
+    colors:
+      range: ColorNodeMapping
+      allowMultiple: true
 
-* This change is merely syntactical; neither the parsed graph for the dialect instance nor the SHACL semantics for the 
-constraint will be affected by the change.
+ColorNodeMapping:
+  mapping:
+    name:
+      range: string
+    code:
+      range: string
+```
 
-* The range of the property defining the nesting will allow multiple objects in its value (defaults to 
-`allowMultiple: true`)
+**Without nesting**
+```yaml
+name: Color palette
+colors:
+  - name: red
+    code: FF0000
+  - name: blue
+    code: 0000FF
+```
 
-### Nesting by key value
+**With nesting key and value**
+```yaml
+name: Color palette
+colors:
+  red: FF0000
+  blue: 0000FF
+```
 
-Similarly to key nesting, sometimes you want to nest maps of key-value pairs (instead of keys only) in the child node to 
-the value of property mappings in the range node.
+In the first example, with nesting keys only, the value of the extra nesting layer was mapped to the rest of the node
+mapping as any other node-node mapping pair. With node value mapping, the value of the extra nesting layer gets mapped to
+another property mapping without having to specify the property mapping label like `name` or `code` for each color. Both 
+the color `name` and `code` properties where mapped from the keys and values of the map.
 
-This style of syntax can be declared combining the facets `mapKey` and `mapValue`:
+### Feature definition
+In AML it is possible to:
+* Map **only the key** of a key-value entry to a property mapping value by its name
+* Map **both key and value** of a key-value to a pair of property mappings values by their names
 
-* `mapKey` maps the key in the child node to the selected property mapping in the range node
-* `mapValue` maps the value after the key in the child node to the selected property mapping in the range node
+These changes are merely syntactical; neither the parsed graph for the dialect instance, nor the SHACL semantics for the
+constraint are affected by nesting.
 
-**Example**
+### Concepts definition
+To add this extra nesting level it is necessary to have _two node mappings_ in the dialect definition in which _one is 
+the range of some property mapping of the other_ (e.g. `PaletteNodeMapping` & `ColorNodeMapping`).
+
+The mentioned node and property mappings are defined as follows: 
+
+*Source node mapping*: is the node mapping responsible for parsing the dialect instance node higher in the nesting hierarchy (e.g. `PaletteNodeMapping`)
+
+*Range node mapping*: is the node mapping responsible for parsing the dialect instance node lower in the nesting hierarchy (e.g. `ColorNodeMapping`)
+
+*Source property mapping*: is the property mapping (in the _source node mapping_) that connects the _source node mapping_ and the _range node mapping_ via its range (e.g. `PalatteNodeMapping.colors`)
+
+### How to include nesting in Dialect definitions
+#### Mapping only the key
+To map the key of a key-value entry in the dialect instance to the value of some property mapping in the 
+_range node mapping_ it is necessary to define a `mapKey` facet in the _source property mapping_:
+
+* `mapKey` selects the property mapping in the _range node mapping_ to map to the key by its _name_
+
+The target property mapping of the `mapKey` facet is defined as the **key-mapped property mapping**.
+
+##### Consideration case for unions
+If the _range node mapping_ was a union node mapping it is required that either:
+* Every union member provides a definition for the *key-mapped property mapping*.
+* The `mapKey` facet defines a property mapping from each union member
+
+It is also required that removing the label of the key-mapped property mapping does not introduce ambiguities (see [Selecting the appropriate member from a union when parsing a document instance](#Selecting the appropriate member from a union when parsing a document instance))
+
+##### Examples
+###### Example 1: simple definition
+_Dialect with nesting_
+```yaml
+Source:
+  mapping:
+    sourceProperty:
+      range: Range
+      mapKey: keyProperty
+
+Range:
+  mapping:
+    keyProperty:
+      range: string
+      mandatory: true
+      unique: true
+    propertyA:
+      range: string
+    propertyB:
+      range: string
+```
+
+_With nesting_
+```yaml
+sourceProperty:
+  valueOfKeyProperty:
+    propertyA: valueOfPropertyA
+    propertyB: valueOfPropertyB
+```
+
+As it can be seen in the dialect definition from the above example, there are two node mappings `Source` and `Range` being these the 
+_source node mapping_ and _range node mapping_ respectfully. `Source` defines a property mapping `sourceProperty` (the _source property mapping_) whose 
+range is `Range` and map key is `keyProperty`.
+
+In the dialect instance, the value of the `sourceProperty` is a map containing only one entry with key `valueOfKeyProperty` and 
+value another map (nested map). Since the `keyProperty` property mapping was marked as the map key of `sourceProperty`, the key 
+`valueOfKeyProperty` will be set as the value of the `keyProperty` property mapping. For this same reason it will not be necessary to 
+write explicitly the `keyProperty` name for it. On the other hand, the value of the mentioned key-value
+entry (the nested map) contains the entries for the reminder property mappings `propertyA` and `propertyB`.
+
+The below example shows how the dialect instance would look if no map key was defined for `sourceProperty`:
+
+_Without nesting_:
+```yaml
+sourceProperty:
+  keyProperty: valueOfKeyProperty
+  propertyA: valueOfPropertyA
+  propertyB: valueOfPropertyB
+```
+
+Notice that all the property mappings (`keyProperty`, `propertyA`, `propertyB`) from the range node mapping (`Range`) have the same nesting level.
+
+###### Example 2: unions with same property mapping
+_Dialect with nesting_
+```yaml
+Source:
+  mapping:
+    sourceProperty:
+      range: UnionRange
+      mapKey: keyProperty # defined in all members
+
+UnionRange:
+  union:
+    - MemberA
+    - MemberB
+    - MemberC
+MemberA:
+  mapping:
+    keyProperty:
+      range: string
+      mandatory: true
+      unique: true
+    propertyA:
+      range: string
+MemberB:
+  mapping:
+    keyProperty:
+      range: string
+      mandatory: true
+      unique: true
+    propertyB:
+      range: string
+MemberC:
+  mapping:
+    keyProperty:
+      range: string
+      mandatory: true
+      unique: true
+    propertyC:
+      range: string
+```
+
+_With nesting_
+```yaml
+sourceProperty:
+  nodeA: # MemberA.keyProperty
+    propertyA: hello # MemberA.propertyA
+  nodeB: # MemberB.keyProperty
+    propertyB: hello # MemberB.propertyB
+  nodeC: # MemberC.keyProperty
+    propertyC: hello # MemberC.propertyC
+```
+
+###### Example #: unions with different property mappings
+_Dialect with nesting_
+```yaml
+Source:
+  mapping:
+    sourceProperty:
+      range: UnionRange
+      mapKey: 
+        MemberA: keyPropertyA
+        MemberB: keyPropertyB
+        MemberC: keyPropertyC
+UnionRange:
+  union:
+    - MemberA
+    - MemberB
+    - MemberC
+MemberA:
+  mapping:
+    keyPropertyA:
+      range: string
+      mandatory: true
+      unique: true
+    propertyA:
+      range: string
+MemberB:
+  mapping:
+    keyPropertyB:
+      range: string
+      mandatory: true
+      unique: true
+    propertyB:
+      range: string
+MemberC:
+  mapping:
+    keyPropertyC:
+      range: string
+      mandatory: true
+      unique: true
+    propertyC:
+      range: string
+```
+
+_With nesting_
+```yaml
+sourceProperty:
+  nodeA: # MemberA.keyPropertyA
+    propertyA: hello # MemberA.propertyA
+  nodeB: # MemberB.keyPropertyB
+    propertyB: hello # MemberB.propertyB
+  nodeC: # MemberC.keyPropertyC
+    propertyC: hello # MemberC.propertyC
+```
+
+##### Validation of key mapping definitions
+Failing to meet the following conditions will raise a **violation** in the _dialect definition_:
+* Only property mappings with literal ranges can be defined as _key-mapped property mapping_
+
+* For non-union _range node mappings_, the value of the `mapKey` facet should match some property mapping in the _range node mapping_ by either its name 
+* For union _range node mappings_, the value of the `mapKey` facet should either:
+    * Match some common property mapping in all union members
+    * Define an _existing_ property mapping for each and every union member from the in the _range node mapping_ in a map with the syntax `UnionMember: propertyMappingFromUnionMember` 
+
+* Removing the _key-mapped property_ mapping label does not introduce ambiguities in union member selection
+
+#### Mapping both key and value
+To map the value of a key-value entry in the dialect instance to the value of some property mapping in the 
+_range node mapping_ the `mapValue` facet must be defined in the _source property mapping_ (having already defined a 
+`mapKey` facet):
+
+* `mapValue` selects the property mapping in the _range node mapping_ to map to the value by its _name_
+
+The target property mapping of the `mapValue` facet is defined as the **value-mapped property mapping**
+
+##### Consideration case for unions
+It is not possible to define a value mapping when the _range node mapping_ is a union node mapping. 
+
+##### Examples 
+###### Example 1
 
 Imagine you want to generate in the graph a list labels, with a `name` property for the label name and a `value` 
 property for the value of the label.
@@ -514,26 +746,28 @@ The generated RDF graph will look like this:
 ]
 ```
 
-The rules for defining key-value nesting are the following:
+##### Validation of nesting with value mapping
+Failing to meet the following conditions will raise a **violation** in the _dialect definition_:
+* Only property mappings with literal ranges can be defined as _value-mapped property mapping_ (`allowMultiple: true` is accepted)
+* The `mapValue` facet can only be defined if `mapKey` is defined (and valid) as well
+* The value of the `mapValue` facet should match some property mapping in the _range node mapping_ by its name
+* The value of the `mapValue` facet cannot match the same property mapping as the `mapKey` facet
+* Mandatory property mappings in the _range node mapping_ must be either _key-mapped_ or _value-mapped_ property mappings
+* Union node mappings cannot be defined as _range node mappings_ with key-value nesting 
 
-* Nodes with at least two properties can be used as ranges for properties defining key-value nesting. 
-
-* Mandatory properties in the range node must be defined as either `mapKey` or `mapValue`. Additional non-mandatory 
-properties will not be parsed.
-
-* `mapValue` can only be defined is `mapKey` is defined
-
-* Only properties with literal ranges can be defined as `mapKey`
-
-Failing to meet these requirements will result in violations
-
-Bear in mind the following considerations:
-
-* This change is merely syntactical; neither the parsed graph for the dialect instance nor the SHACL semantics for the 
-constraint will be affected by the change.
-
-* The range of the property defining the nesting will allow multiple objects in its value (defaults to 
-`allowMultiple: true`)
+### Some considerations for nesting & further validations
+* The range of the _source property mapping_ will allow multiple objects in its value (defaults to `allowMultiple: true`).
+Setting the `allowMultiple` facet to `false` will result in a **violation** in the dialect definition. 
+* When mapping both key and value, additional non-mandatory property mappings which are neither _key-mapped_ nor 
+_value-mapped_ will not be parsed. This is valid behavior. Nevertheless these scenarios should result in a **warning** 
+in the dialect definition to prevent undesired behaviors.
+* _Value-mapped property mappings_ allow only scalar ranges. Other modeling alternatives are should be used when a 
+map is needed as the range of a _value-mapped property mapping_, like extracting a new node mapping and using only
+_key-mapped property mappings_. 
+* Unions are allowed only when defining _key-mapped properties_. Unions allow to unify different node mapping structures
+into a single one. When defining both _key-mapped_ and _value-mapped_ property mappings the structure for every value
+of the _source property mapping_ shares the same structure `key:value` (since _value-mapped property mappings_ have literal
+ranges).
 
 ## Unions
 
