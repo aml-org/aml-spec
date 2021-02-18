@@ -921,9 +921,9 @@ kind: TypeC
 
 To use the node mappings and constraints defined in the dialect to support new types of documents, we must map the node mappings to the different types of modular documents supported by AML:
 
-- Documents: stand-alone documents that can encode a main element of the domain and declare auxiliary elements that then can be referenced in the document
-- Modules: libraries containing sets of declarations of reusable definitions that can be referenced from other types of documents
-- Fragments: non-standalone documents encoding a single element that can be included in other types of documents
+- **Documents**: stand-alone documents that can encode a main element of the domain and declare auxiliary elements that then can be referenced in the document
+- **Modules**: libraries containing sets of declarations of reusable definitions that can be referenced from other types of documents
+- **Fragments**: non-standalone documents encoding a single element that can be included in other types of documents
 
 The mapping in a dialect is achieved through the `documents` property. The value of this property is a mapping with 3 possible keys:
 
@@ -1150,6 +1150,17 @@ profile: My Profile
 validations:
   - !include validation_fragment.yaml
 ```
+
+### Document model mapping options
+
+The document model mapping can be customized with the following options inside the `options` property. These apply to all the defined documents in the document mapping.
+
+| Property | Description | Values |
+| ---      | ---         | ---    |
+| `selfEncoded`       | Indicates if the base unit URI is the same as the URI of the encoded node in the unit        | `true`: same URI <br> `false` (default): different URIs |
+| `declarationsPath`  | Location for parsed declarations IDs                                                         | string. <br> Example: `some/path/to/declarations` |
+| `keyProperty`       | Indicates if the dialect to parse a dialect instance is identified by a property or a header | `true`: identified by property `DIALECT_NAME: DIALECT_VERSION` <br> `false` (default): identified by header `#%DIALECT_NAME DIALECT_VERSION` |
+| `referenceStyle`    | Determines the style for inclusions between the defined documents in the document mapping    | `RamlStyle` (default): inclusions using `!include` tag <br> `JsonSchemaStyle` inclusions using `$ref` map |
 
 ## Dynamic composition of documents
 
