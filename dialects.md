@@ -138,8 +138,8 @@ Some other properties in the property mapping can be used to define different wa
 | Property | Description |
 |-------------|-----------------|
 | sorted  | Indicates that the values of the property must be stored preserving the declaration order |
-| mapKey | declares a key nesting with the range node (see [Nesting by key](#nesting-by-key))|
-| mapValue | declares a value nesting with the range node (see [Nesting by key value](#nesting-by-key-value))|
+| mapKey | declares a key nesting with the range node (see [Nesting by key](#mapping-only-the-key))|
+| mapValue | declares a value nesting with the range node (see [Nesting by key value](#mapping-both-key-and-value))|
 
 Finally, some properties can be used to allow users to work explicitly with unions of nodes:
 
