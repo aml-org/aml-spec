@@ -543,7 +543,7 @@ sourceProperty:
 ```
 
 As it can be seen in the dialect definition from the above example, there are two node mappings `Source` and `Range` being these the 
-_source node mapping_ and _range node mapping_ respectfully. `Source` defines a property mapping `sourceProperty` (the _source property mapping_) whose 
+_source node mapping_ and _range node mapping_ respectively. `Source` defines a property mapping `sourceProperty` (the _source property mapping_) whose 
 range is `Range` and map key is `keyProperty`.
 
 In the dialect instance, the value of the `sourceProperty` is a map containing only one entry with key `valueOfKeyProperty` and 
@@ -1981,7 +1981,7 @@ myProperty: I'm overriden by the child property mapping
 The above example showcases a child property mapping that overrides a parent property mapping.
 
 Both the child and parent node define the `myProperty` property mapping, each mapping to
-`http://myexternal.org#childProperty` and `http://myexternal.org#parentProperty` respectfully. As seen in the parsed
+`http://myexternal.org#childProperty` and `http://myexternal.org#parentProperty` respectively. As seen in the parsed
 node the `http://myexternal.org#childProperty` overrides the `http://myexternal.org#parentProperty` because both
 share the same `myProperty` property mapping name.
 
