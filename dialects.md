@@ -89,7 +89,7 @@ In this case, we declare a new type of node in the model `profileNode` and we as
 
 The meaning of this mapping can be provided using closed world semantics via [W3C SHACL](https://www.w3.org/TR/shacl/) and defining a data shape constraint over the model data graph for the mapping we have just described:
 
-``` n3
+```turtle
 base:profileNode rdf:type shacl:NodeShape ;
   sh:targetClass validation:Profile ;
   sh:property base:profileNode/property/profile ;
@@ -111,7 +111,7 @@ description: a test validation profile for AMF
 
 When parsed, this document will generate the following RDF data graph:
 
-``` n3
+```turtle
 [
   rdfs:type validation:Profile ;
   schema-org:name "OpenAPI" ;
@@ -166,7 +166,7 @@ nodeMappings:
 
 SHACL constraint shape:
 
-``` n3
+``` turtle
 base:profileNode rdf:type shacl:NodeShape ;
   sh:targetClass validation:Profile ;
   sh:property base:profileNode/property/profile .
@@ -257,7 +257,7 @@ validations:
 
 The previous document, when parsed, will generate the following RDF graph:
 
-``` n3
+``` turtle
 [
   rdfs:type validation:ShapeValidation ;
   schema-org:name "My Profile" ;
@@ -274,7 +274,7 @@ The previous document, when parsed, will generate the following RDF graph:
 The SHACL semantics for this way of nesting of nodes are shown in the following translation of the dialect mappings:
 
 
-``` n3
+``` turtle
 base:profileNode rdf:type shacl:NodeShape ;
   sh:targetClass validation:Profile ;
   sh:property base:profileNode/property/profile ;
@@ -315,7 +315,7 @@ More than one node mapping can be specified as the range of a property mapping. 
 
 SHACL semantics:
 
-``` n3
+``` turtle
 base:profileNode rdf:type shacl:NodeShape ;
   sh:targetClass validation:Profile ;
   sh:property base:profileNode/property/validations .
@@ -2072,7 +2072,7 @@ Dialect references, introduced by the `$dialect` referencing directive can be us
 
 ## References
 
-- Berners-Lee, T., Masinter, L., and M. McCahill, "Uniform Resource Locators (URL)", RFC 1738, December 1994.
+- [Berners-Lee, T., Masinter, L., and M. McCahill, "Uniform Resource Locators (URL)", RFC 1738, December 1994.](https://datatracker.ietf.org/doc/html/rfc1738)
 - [RDF 1.1 Concepts and Abstract Syntax](https://www.w3.org/TR/rdf11-concepts/)
 - [SHACL](https://www.w3.org/TR/shacl/)
 - [OWL 2 Web Ontology Language Document Overview (2nd Edition)](https://www.w3.org/TR/owl2-overview/)
