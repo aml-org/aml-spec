@@ -19,7 +19,6 @@ Dialect documents are declared using the `#%Dialect 1.0` header. Documents must 
 #%Dialect 1.0
 
 dialect: Validation Profile
-
 version: “1.0”
 ```
 
@@ -89,7 +88,7 @@ In this case, we declare a new type of node in the model `profileNode` and we as
 
 The meaning of this mapping can be provided using closed world semantics via [W3C SHACL](https://www.w3.org/TR/shacl/) and defining a data shape constraint over the model data graph for the mapping we have just described:
 
-``` n3
+```turtle
 base:profileNode rdf:type shacl:NodeShape ;
   sh:targetClass validation:Profile ;
   sh:property base:profileNode/property/profile ;
@@ -111,7 +110,7 @@ description: a test validation profile for AMF
 
 When parsed, this document will generate the following RDF data graph:
 
-``` n3
+```turtle
 [
   rdfs:type validation:Profile ;
   schema-org:name "OpenAPI" ;
@@ -166,7 +165,7 @@ nodeMappings:
 
 SHACL constraint shape:
 
-``` n3
+``` turtle
 base:profileNode rdf:type shacl:NodeShape ;
   sh:targetClass validation:Profile ;
   sh:property base:profileNode/property/profile .
@@ -257,7 +256,7 @@ validations:
 
 The previous document, when parsed, will generate the following RDF graph:
 
-``` n3
+``` turtle
 [
   rdfs:type validation:ShapeValidation ;
   schema-org:name "My Profile" ;
@@ -274,7 +273,7 @@ The previous document, when parsed, will generate the following RDF graph:
 The SHACL semantics for this way of nesting of nodes are shown in the following translation of the dialect mappings:
 
 
-``` n3
+``` turtle
 base:profileNode rdf:type shacl:NodeShape ;
   sh:targetClass validation:Profile ;
   sh:property base:profileNode/property/profile ;
@@ -315,7 +314,7 @@ More than one node mapping can be specified as the range of a property mapping. 
 
 SHACL semantics:
 
-``` n3
+``` turtle
 base:profileNode rdf:type shacl:NodeShape ;
   sh:targetClass validation:Profile ;
   sh:property base:profileNode/property/validations .
@@ -1151,6 +1150,75 @@ kind: TypeC
 
 *Note: the use of discriminators is recommended because they erase the posbility of ambiguity*
 
+## Semantic Extensions
+
+AML Dialect documents can be also be used to define "extension" that may be used to extend other "semantic documents" like any AML Dialects, Fragments or Modules or API Specifications.
+
+### Defining a Semantic Extension
+Semantic extensions are defined under the `extensions` key at the base of the document. Each YAML key is the name with which the extension is defined by and the value is a reference to a user-defined [Annotation Mapping](#annotation-mappings).
+
+``` yaml
+extensions:
+  paginated: PaginationMapping
+  deprecated: DeprecationMapping
+```
+
+The notation with which the semantic extension is written in the target document depends on the notation the document's specification defines to write custom user-extensions.
+
+For example, given the following extensions:
+```yaml
+extensions:
+  scraped-from: MovieInformationProviderMapping # Suppose this mapping is defined.
+```
+
+it can be used from an AML Dialect Instance like:
+```yaml
+#%Movie 1.0
+title: The Lord of the Rings
+director: Peter Jackson
+(scraped-from):
+  name: IMDB
+  url: https://www.imdb.com/title/tt0120737/
+```
+
+## Annotation Mappings
+Annotation Mappings are used to define the structure that an extension must have. These mappings contain the same fields as a [Property Mappings](#property-mappings) with the exception of **mapKey** and **mapValue**.
+
+It also defines some fields of its own:
+| Property | Value | Description |
+|-------------|-------------|-----------------|
+| domain | string | identifies the node type which may be extended by a semantic extension     |
+| propertyTerm | string | URI used as predicate to link the extended node with the value described with the Annotation Mapping range  |
+
+
+They are defined under the `annotationMappings` key in a YAML Map where the key is the name of the Annotation Mapping.
+
+```yaml
+annotationMappings:
+  PaginationMapping:
+    domain: apiContract.Response
+    propertyTerm: apiContract.pagination
+    range: integer # Like Node properties, it allows scalar ranges
+    minimum: 0
+
+  DeprecatedMapping:
+    domain: apiContract.Endpoint
+    propertyTerm: apiContract.deprecated
+    range: Deprecated  # Like Node properties, it allows re-using defined Node mappings elsewhere.
+
+nodeMappings:
+  Deprecated:
+    mappings:
+      date:
+        range: string
+        mandatory: true
+      reasion:
+        range: string
+        mandatory: true
+
+```
+
+**Note**: An AML processor MUST provide a mechanism with which document writers may extend their documents with semantic extensions. They may optionally provide a way for users to register their own semantic extensions.
 ## Document model mapping
 
 To use the node mappings and constraints defined in the dialect to support new types of documents, we must map the node mappings to the different types of modular documents supported by AML:
@@ -2072,7 +2140,7 @@ Dialect references, introduced by the `$dialect` referencing directive can be us
 
 ## References
 
-- Berners-Lee, T., Masinter, L., and M. McCahill, "Uniform Resource Locators (URL)", RFC 1738, December 1994.
+- [Berners-Lee, T., Masinter, L., and M. McCahill, "Uniform Resource Locators (URL)", RFC 1738, December 1994.](https://datatracker.ietf.org/doc/html/rfc1738)
 - [RDF 1.1 Concepts and Abstract Syntax](https://www.w3.org/TR/rdf11-concepts/)
 - [SHACL](https://www.w3.org/TR/shacl/)
 - [OWL 2 Web Ontology Language Document Overview (2nd Edition)](https://www.w3.org/TR/owl2-overview/)
